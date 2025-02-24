@@ -4801,6 +4801,10 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         formats.extend(self._extract_storyboard(player_responses, duration))
 
         channel_handle = self.handle_from_url(owner_profile_url)
+        shorts_url = f'https://www.youtube.com/shorts/{video_id}'
+        shorts_page, _ = self._download_webpage_handle(shorts_url, video_id, fatal=False, headers={'User-Agent': 'Mozilla/5.0'})
+        shorts_initial_data = self.extract_yt_initial_data(video_id, shorts_page, fatal=False)
+        shorts_next_url = traverse_obj(shorts_initial_data, ('overlay', 'reelPlayerOverlayRenderer', 'metapanel', 'reelMetapanelViewModel', 'metadataItems', 1, 'reelMultiFormatLinkViewModel', 'command', 'innertubeCommand', 'commandMetadata', 'webCommandMetadata', 'url'))
 
         info = {
             'id': video_id,
@@ -4831,6 +4835,7 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
             'release_timestamp': live_start_time,
             '_format_sort_fields': (  # source_preference is lower for potentially damaged formats
                 'quality', 'res', 'fps', 'hdr:12', 'source', 'vcodec', 'channels', 'acodec', 'lang', 'proto'),
+            'shorts_next_url': shorts_next_url,
         }
 
         subtitles = {}
@@ -5158,7 +5163,6 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         info['__post_extractor'] = self.extract_comments(master_ytcfg, video_id, contents, webpage)
 
         self.mark_watched(video_id, player_responses)
-
         return info
 
 
